@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Door Control</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: #1a1d27;
+      border: 1px solid #2e3248;
+      border-radius: 12px;
+      padding: 40px 36px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 28px;
+      text-align: center;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.82rem;
+      color: #9aa0b4;
+      margin-bottom: 6px;
+      margin-top: 18px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      background: #0f1117;
+      border: 1px solid #2e3248;
+      border-radius: 7px;
+      color: #e0e0e0;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+      border-color: #5b6ef5;
+    }
+
+    .error {
+      color: #e05c6a;
+      font-size: 0.82rem;
+      margin-top: 12px;
+      text-align: center;
+      min-height: 18px;
+    }
+
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 24px;
+      padding: 12px;
+      background: #5b6ef5;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn:hover  { background: #4a5de0; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #3a3f5c; cursor: not-allowed; }
+
+    .btn-unlock {
+      background: #2ecc71;
+      font-size: 1.05rem;
+      padding: 14px;
+    }
+    .btn-unlock:hover    { background: #27b860; }
+    .btn-unlock:disabled { background: #1e6e44; }
+
+    .status {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 0.9rem;
+      min-height: 20px;
+      color: #9aa0b4;
+    }
+    .status.success { color: #2ecc71; }
+    .status.fail    { color: #e05c6a; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ── LOGIN SCREEN ─────────────────────────────────────── -->
+  <div class="card" id="login-screen">
+    <h1>🔒 Smart Door Control</h1>
+
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Enter username" autocomplete="username" />
+
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" />
+
+    <p class="error" id="login-error"></p>
+
+    <button class="btn" id="login-btn" onclick="handleLogin()">Sign In</button>
+  </div>
+
+  <!-- ── DOOR CONTROL SCREEN ──────────────────────────────── -->
+  <div class="card hidden" id="door-screen">
+    <h1>🚪 Door Control</h1>
+
+    <button class="btn btn-unlock" id="unlock-btn" onclick="unlockDoor()">
+      Unlock Door for 5 Seconds
+    </button>
+
+    <p class="status" id="door-status"></p>
+  </div>
+
+  <script>
+    // ── Credentials ────────────────────────────────────────
+    const VALID_USERNAME = 'admin';
+    const VALID_PASSWORD = 'door1234';
+
+    // ── Login ──────────────────────────────────────────────
+    function handleLogin() {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      const errorEl = document.getElementById('login-error');
+
+      if (username === VALID_USERNAME && password === VALID_PASSWORD) {
+        errorEl.textContent = '';
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('door-screen').classList.remove('hidden');
+      } else {
+        errorEl.textContent = 'Incorrect username or password.';
+      }
+    }
+
+    // Allow pressing Enter to submit login
+    document.getElementById('username').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('password').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') handleLogin();
+    });
+
+    // ── Unlock Door ────────────────────────────────────────
+    async function unlockDoor() {
+      const btn = document.getElementById('unlock-btn');
+      const statusEl = document.getElementById('door-status');
+
+      btn.disabled = true;
+      statusEl.className = 'status';
+      statusEl.textContent = 'Sending command…';
+
+      try {
+        await fetch('https://secure-door.sabhya.me/open', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        statusEl.className = 'status success';
+        statusEl.textContent = '✅ Command sent — door unlocked for 5 seconds.';
+      } catch (err) {
+        statusEl.className = 'status fail';
+        statusEl.textContent = '❌ Failed to send command. Check connection.';
+      } finally {
+        // Re-enable after 6 seconds so the user can't spam
+        setTimeout(() => {
+          btn.disabled = false;
+          statusEl.textContent = '';
+          statusEl.className = 'status';
+        }, 6000);
+      }
+    }
+  </script>
+</body>
+</html>
