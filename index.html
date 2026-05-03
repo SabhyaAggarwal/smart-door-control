@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Smart Door Remote</title>
+  <meta name="description" content="Securely unlock your smart door from anywhere." />
+  <meta name="theme-color" content="#0a0c14" />
+
+  <!-- PWA / Web App Meta -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Door Remote" />
+  <link rel="apple-touch-icon" href="icon-512.png" />
+
+  <!-- Google Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-primary: #0a0c14;
+      --bg-card: rgba(18, 21, 34, 0.85);
+      --bg-input: rgba(10, 12, 20, 0.9);
+      --border-subtle: rgba(255, 255, 255, 0.06);
+      --border-focus: #6c63ff;
+      --text-primary: #f0f0f5;
+      --text-secondary: #8a8fa8;
+      --accent: #6c63ff;
+      --accent-hover: #5a52e0;
+      --accent-glow: rgba(108, 99, 255, 0.35);
+      --green: #34d399;
+      --green-glow: rgba(52, 211, 153, 0.3);
+      --green-hover: #2bc48a;
+      --red: #f87171;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Animated Background ──────────────────────────────── */
+    .bg-orb {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .bg-orb-1 {
+      width: 500px; height: 500px;
+      background: #6c63ff;
+      top: -150px; left: -100px;
+      animation: orb-drift 18s ease-in-out infinite alternate;
+    }
+    .bg-orb-2 {
+      width: 400px; height: 400px;
+      background: #34d399;
+      bottom: -120px; right: -80px;
+      animation: orb-drift 22s ease-in-out infinite alternate-reverse;
+    }
+    .bg-orb-3 {
+      width: 300px; height: 300px;
+      background: #a78bfa;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      animation: orb-drift 15s ease-in-out infinite alternate;
+    }
+    @keyframes orb-drift {
+      0%   { transform: translate(0, 0) scale(1); }
+      50%  { transform: translate(40px, -30px) scale(1.15); }
+      100% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* ── Card ─────────────────────────────────────────────── */
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--bg-card);
+      backdrop-filter: blur(24px) saturate(1.4);
+      -webkit-backdrop-filter: blur(24px) saturate(1.4);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 44px 32px 36px;
+      width: 100%;
+      max-width: 400px;
+      margin: 16px;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6),
+                  inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      animation: card-enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    @keyframes card-enter {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ── Header ───────────────────────────────────────────── */
+    .header-icon {
+      width: 56px; height: 56px;
+      margin: 0 auto 20px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 4px;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.85rem;
+      margin-bottom: 28px;
+    }
+
+    /* ── Form Elements ────────────────────────────────────── */
+    .field { margin-bottom: 16px; }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+    input:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* ── Buttons ──────────────────────────────────────────── */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(255,255,255,0.1), transparent);
+      pointer-events: none;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { cursor: not-allowed; opacity: 0.5; transform: none; }
+
+    .btn-login {
+      margin-top: 24px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+    .btn-login:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--accent-hover), #7c3aed);
+      box-shadow: 0 6px 28px var(--accent-glow);
+    }
+
+    .btn-unlock {
+      margin-top: 8px;
+      padding: 18px;
+      font-size: 1.05rem;
+      background: linear-gradient(135deg, var(--green), #10b981);
+      color: #fff;
+      box-shadow: 0 4px 20px var(--green-glow);
+    }
+    .btn-unlock:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--green-hover), #059669);
+      box-shadow: 0 6px 28px var(--green-glow);
+    }
+
+    /* ── Status / Error Messages ──────────────────────────── */
+    .error-msg {
+      color: var(--red);
+      font-size: 0.82rem;
+      text-align: center;
+      margin-top: 14px;
+      min-height: 18px;
+      animation: shake 0.4s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%      { transform: translateX(-6px); }
+      40%      { transform: translateX(6px); }
+      60%      { transform: translateX(-4px); }
+      80%      { transform: translateX(4px); }
+    }
+
+    .status-bar {
+      margin-top: 20px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 500;
+      min-height: 46px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+    }
+    .status-bar.idle {
+      background: transparent;
+      color: var(--text-secondary);
+    }
+    .status-bar.sending {
+      background: rgba(108, 99, 255, 0.1);
+      border: 1px solid rgba(108, 99, 255, 0.2);
+      color: var(--accent);
+    }
+    .status-bar.success {
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.2);
+      color: var(--green);
+    }
+    .status-bar.fail {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      color: var(--red);
+    }
+
+    /* ── Spinner ──────────────────────────────────────────── */
+    .spinner {
+      width: 18px; height: 18px;
+      border: 2px solid rgba(108,99,255,0.3);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Lock Animation ───────────────────────────────────── */
+    .lock-anim {
+      width: 120px; height: 120px;
+      margin: 0 auto 24px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .lock-ring {
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 2px solid var(--border-subtle);
+      position: absolute;
+      transition: border-color 0.5s, box-shadow 0.5s;
+    }
+    .lock-ring.active {
+      border-color: var(--green);
+      box-shadow: 0 0 30px var(--green-glow), inset 0 0 20px rgba(52,211,153,0.05);
+    }
+    .lock-ring-inner {
+      width: 96px; height: 96px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .lock-icon {
+      font-size: 42px;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .lock-icon.unlocked {
+      transform: scale(1.15);
+    }
+
+    /* ── Pulse ring effect ────────────────────────────────── */
+    .pulse-ring {
+      position: absolute;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      border: 2px solid var(--green);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .pulse-ring.animate {
+      animation: pulse-out 1.2s ease-out;
+    }
+    @keyframes pulse-out {
+      0%   { transform: scale(1); opacity: 0.6; }
+      100% { transform: scale(1.6); opacity: 0; }
+    }
+
+    /* ── Logout ───────────────────────────────────────────── */
+    .logout-link {
+      display: block;
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .logout-link:hover { color: var(--text-primary); }
+
+    /* ── Screen Transitions ───────────────────────────────── */
+    .screen {
+      display: none;
+      animation: screen-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .screen.active { display: block; }
+    @keyframes screen-in {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Countdown ring ───────────────────────────────────── */
+    .countdown-ring {
+      position: absolute;
+      width: 120px; height: 120px;
+      transform: rotate(-90deg);
+    }
+    .countdown-ring circle {
+      fill: none;
+      stroke-width: 3;
+      stroke: var(--green);
+      stroke-linecap: round;
+      stroke-dasharray: 370;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 5s linear;
+    }
+    .countdown-ring circle.animate {
+      stroke-dashoffset: 370;
+    }
+
+    /* ── Session Timer ────────────────────────────────────── */
+    .session-info {
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      margin-top: 16px;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Orbs -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
+  <!-- ══════════════════════════════════════════════════════ -->
+  <!-- LOGIN SCREEN                                          -->
+  <!-- ══════════════════════════════════════════════════════ -->
+  <div class="card" id="app-card">
+    <div class="screen active" id="login-screen">
+      <div class="header-icon">🔐</div>
+      <h1>Smart Door Remote</h1>
+      <p class="subtitle">Sign in to access door controls</p>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input type="text" id="username" placeholder="Enter username"
+               autocomplete="username" autocapitalize="off" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" placeholder="Enter password"
+               autocomplete="current-password" />
+      </div>
+
+      <p class="error-msg" id="login-error"></p>
+
+      <button class="btn btn-login" id="login-btn" onclick="handleLogin()">
+        Sign In
+      </button>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════ -->
+    <!-- DOOR CONTROL SCREEN                                 -->
+    <!-- ════════════════════════════════════════════════════ -->
+    <div class="screen" id="door-screen">
+      <div class="lock-anim" id="lock-anim">
+        <div class="lock-ring" id="lock-ring"></div>
+        <svg class="countdown-ring" viewBox="0 0 120 120">
+          <circle id="countdown-circle" cx="60" cy="60" r="58.5" />
+        </svg>
+        <div class="pulse-ring" id="pulse-ring"></div>
+        <div class="lock-ring-inner">
+          <span class="lock-icon" id="lock-icon">🔒</span>
+        </div>
+      </div>
+
+      <h1 id="door-title">Door Locked</h1>
+      <p class="subtitle" id="door-subtitle">Tap below to unlock for 5 seconds</p>
+
+      <button class="btn btn-unlock" id="unlock-btn" onclick="unlockDoor()">
+        <span id="btn-label">🔓 Unlock Door</span>
+      </button>
+
+      <div class="status-bar idle" id="status-bar"></div>
+
+      <a class="logout-link" onclick="handleLogout()">Sign out</a>
+    </div>
+  </div>
+
+  <script>
+    // ── Config ─────────────────────────────────────────────
+    const API_ENDPOINT = 'https://secure-door.sabhya.me/open';
+    const VALID_USERNAME = 'admin';
+    const VALID_PASSWORD = 'door1234';
+    const UNLOCK_COOLDOWN_MS = 6000;
+
+    // ── Elements ───────────────────────────────────────────
+    const $  = id => document.getElementById(id);
+    const loginScreen  = $('login-screen');
+    const doorScreen   = $('door-screen');
+    const loginError   = $('login-error');
+    const unlockBtn    = $('unlock-btn');
+    const btnLabel     = $('btn-label');
+    const statusBar    = $('status-bar');
+    const lockIcon     = $('lock-icon');
+    const lockRing     = $('lock-ring');
+    const pulseRing    = $('pulse-ring');
+    const countdownCir = $('countdown-circle');
+    const doorTitle    = $('door-title');
+    const doorSubtitle = $('door-subtitle');
+
+    // ── Persist session in sessionStorage ──────────────────
+    if (sessionStorage.getItem('doorAuth') === 'true') {
+      showScreen('door');
+    }
+
+    // ── Login ──────────────────────────────────────────────
+    function handleLogin() {
+      const user = $('username').value.trim();
+      const pass = $('password').value;
+
+      if (!user || !pass) {
+        showLoginError('Please fill in all fields.');
+        return;
+      }
+
+      if (user === VALID_USERNAME && pass === VALID_PASSWORD) {
+        sessionStorage.setItem('doorAuth', 'true');
+        showScreen('door');
+      } else {
+        showLoginError('Incorrect username or password.');
+        $('password').value = '';
+        $('password').focus();
+      }
+    }
+
+    function showLoginError(msg) {
+      loginError.textContent = msg;
+      // Re-trigger shake animation
+      loginError.style.animation = 'none';
+      loginError.offsetHeight; // reflow
+      loginError.style.animation = '';
+    }
+
+    function handleLogout() {
+      sessionStorage.removeItem('doorAuth');
+      $('username').value = '';
+      $('password').value = '';
+      loginError.textContent = '';
+      showScreen('login');
+    }
+
+    function showScreen(name) {
+      loginScreen.classList.toggle('active', name === 'login');
+      doorScreen.classList.toggle('active', name === 'door');
+      // Re-trigger entrance animation
+      const active = name === 'door' ? doorScreen : loginScreen;
+      active.style.animation = 'none';
+      active.offsetHeight;
+      active.style.animation = '';
+    }
+
+    // Enter key support
+    ['username', 'password'].forEach(id => {
+      $(id).addEventListener('keydown', e => {
+        if (e.key === 'Enter') handleLogin();
+      });
+    });
+
+    // ── Unlock Door ────────────────────────────────────────
+    async function unlockDoor() {
+      unlockBtn.disabled = true;
+      btnLabel.textContent = '⏳ Sending…';
+      setStatus('sending', 'Connecting to door…');
+
+      try {
+        const res = await fetch(API_ENDPOINT, { method: 'POST' });
+
+        if (res.ok) {
+          setStatus('success', '✅ Door unlocked for 5 seconds');
+          lockIcon.textContent = '🔓';
+          lockIcon.classList.add('unlocked');
+          lockRing.classList.add('active');
+          doorTitle.textContent = 'Door Unlocked';
+          doorSubtitle.textContent = 'Locking again in 5 seconds…';
+          btnLabel.textContent = '✅ Unlocked';
+
+          // Pulse effect
+          pulseRing.classList.remove('animate');
+          pulseRing.offsetHeight;
+          pulseRing.classList.add('animate');
+
+          // Countdown ring animation
+          countdownCir.classList.remove('animate');
+          countdownCir.offsetHeight;
+          countdownCir.classList.add('animate');
+
+          // Reset after cooldown
+          setTimeout(() => resetDoorUI(), UNLOCK_COOLDOWN_MS);
+        } else {
+          const text = await res.text();
+          setStatus('fail', `❌ Server error: ${text.trim()}`);
+          btnLabel.textContent = '🔓 Unlock Door';
+          setTimeout(() => {
+            unlockBtn.disabled = false;
+            setStatus('idle', '');
+          }, 3000);
+        }
+      } catch (err) {
+        setStatus('fail', '❌ Failed — check your connection');
+        btnLabel.textContent = '🔓 Unlock Door';
+        setTimeout(() => {
+          unlockBtn.disabled = false;
+          setStatus('idle', '');
+        }, 3000);
+      }
+    }
+
+    function resetDoorUI() {
+      unlockBtn.disabled = false;
+      btnLabel.textContent = '🔓 Unlock Door';
+      lockIcon.textContent = '🔒';
+      lockIcon.classList.remove('unlocked');
+      lockRing.classList.remove('active');
+      countdownCir.classList.remove('animate');
+      doorTitle.textContent = 'Door Locked';
+      doorSubtitle.textContent = 'Tap below to unlock for 5 seconds';
+      setStatus('idle', '');
+    }
+
+    function setStatus(type, msg) {
+      statusBar.className = `status-bar ${type}`;
+      if (type === 'sending') {
+        statusBar.innerHTML = `<span class="spinner"></span> ${msg}`;
+      } else {
+        statusBar.textContent = msg;
+      }
+    }
+
+    // ── Register Service Worker ────────────────────────────
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

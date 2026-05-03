@@ -1,0 +1,25 @@
+{
+  "name": "Smart Door Remote",
+  "short_name": "Door Remote",
+  "description": "Securely unlock your smart door from anywhere.",
+  "start_url": "/smart-door-remote/",
+  "scope": "/smart-door-remote/",
+  "display": "standalone",
+  "background_color": "#0a0c14",
+  "theme_color": "#0a0c14",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
